@@ -1,7 +1,380 @@
 <!DOCTYPE html>
 <html>
-<head></head>
-<body>
-<h1>Hello world</h1>
-</body>
+  <head>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+    <title>LTV/CAC ratio</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+<!--
+body
+{
+  font-size: 13px;
+}
+
+div.container
+{
+  clear: both;
+}
+
+span.good
+{
+  color: green;
+  font-family: STIXGeneral-Regular;
+  padding-left: 0.315em;
+}
+
+span.bad
+{
+  color: red;
+  font-family: STIXGeneral-Regular;
+  padding-left: 0.315em;
+}
+
+div.tex
+{
+  margin-bottom: 20px;
+  float: left;
+  clear: both;
+}
+
+div.value
+{
+  margin-top: -5px;
+  margin-bottom: 5px;
+}
+
+input.data
+{
+  margin-left: 4px;
+  height: 20px;
+  width: 50px;
+}
+
+div.wijmo-wijslider-horizontal
+{
+  float: left;
+}
+
+span.data
+{
+  margin-left: 5px;
+}
+-->
+    </style>
+    <!-- jQuery -->
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+    <!-- Wijmo CSS 及び script -->
+    <link type="text/css" href="http://cdn.wijmo.com/themes/aristo/jquery-wijmo.css" rel="stylesheet" title="metro-jqueryui" />
+    <link type="text/css" href="http://cdn.wijmo.com/jquery.wijmo-complete.all.2.1.0.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="http://cdn.wijmo.com/jquery.wijmo-open.all.2.1.0.min.js"></script>
+    <script type="text/javascript" src="http://cdn.wijmo.com/jquery.wijmo-complete.all.2.1.0.min.js"></script>
+    <!-- MVVM 用のKnockoutJS -->
+    <script type="text/javascript" src="http://cdn.wijmo.com/external/knockout-2.0.0.js"></script>
+    <script type="text/javascript" src="http://cdn.wijmo.com/external/knockout.wijmo.js"></script>
+    <script type="text/javascript">
+
+var viewModel = function () {
+  var self = this;
+  // revenue
+  self.revenue_val = ko.observable(0);
+  self.revenue_min = ko.observable(0);
+  self.revenue_max = ko.observable(100);
+
+  // churn
+  self.churn_val = ko.observable(0);
+  self.churn_min = ko.observable(0);
+  self.churn_max = ko.observable(10);
+  self.churn_step = ko.observable(0.1);
+
+  // gross margin
+  self.gm_val = ko.observable(50);
+  self.gm_min = ko.observable(50);
+  self.gm_max = ko.observable(100);
+
+  // gain a new_customer
+  self.new_customer_val = ko.observable(0);
+  self.new_customer_min = ko.observable(0);
+  self.new_customer_max = ko.observable(10);
+  self.new_customer_step = ko.observable(0.1);
+
+  // person cost
+  self.person_cost_val = ko.observable(50);
+  self.person_cost_min = ko.observable(50);
+  self.person_cost_max = ko.observable(100);
+
+  // sales
+  self.sales_val = ko.observable(0);
+  self.sales_min = ko.observable(0);
+  self.sales_max = ko.observable(15);
+
+  // sales percntage for the product
+  self.sales_per_val = ko.observable(0);
+  self.sales_per_min = ko.observable(0);
+  self.sales_per_max = ko.observable(100);
+
+  // marketing
+  self.marketing_val = ko.observable(0);
+  self.marketing_min = ko.observable(0);
+  self.marketing_max = ko.observable(15);
+
+  // marketing percntage for the product
+  self.marketing_per_val = ko.observable(0);
+  self.marketing_per_min = ko.observable(0);
+  self.marketing_per_max = ko.observable(100);
+
+  // marketing cost for the product
+  self.marketing_cost_val = ko.observable(0);
+  self.marketing_cost_min = ko.observable(0);
+  self.marketing_cost_max = ko.observable(300);
+
+  var round = function(float){
+    return(Math.round(float * 100) / 100);
+  };
+
+  self.ltv = ko.computed(function() {
+    var ltv = self.revenue_val() * (self.gm_val()/100) / (self.churn_val() / 100);
+    return(round(ltv));
+  }, self);
+
+  self.sales = ko.computed(function() {
+    var sales = (self.sales_val() * (self.sales_per_val() / 100) * self.person_cost_val());
+    return(round(sales));
+  }, self);
+
+  self.marketing = ko.computed(function() {
+    var marketing = (self.marketing_val() * (self.marketing_per_val() / 100) * self.person_cost_val() + self.marketing_cost_val() );
+    return(round(marketing));
+  }, self);
+
+  self.cac = ko.computed(function() {
+    var cac = (self.sales() + self.marketing())/ self.new_customer_val();
+    return(round(cac));
+  }, self);
+
+  self.ratio = ko.computed(function() {
+    var ratio = self.ltv() / self.cac();
+    return(round(ratio));
+  }, self);
+
+  // good or bad
+  self.good = ko.computed(function() {
+    return self.ratio() >= 3 ;
+  }, self);
+  self.bad = ko.computed(function() {
+    return !self.good();
+  }, self);
+
+  // detail toggle
+  self.showDetail = ko.observable(false);
+  self.toggleShowDetail = function(){
+    self.showDetail(!self.showDetail());
+  };
+};
+
+<!--ViewModel をバインドします-->
+$(document).ready(function () {
+  var vm = new viewModel();
+  ko.applyBindings(vm);
+});
+    </script>
+  </head>
+
+  <body>
+<div class="container">
+<div class="tex"><span class="MathJax_Preview"></span><div class="MathJax_Display" role="textbox" aria-readonly="true" style="text-align: center;"><span class="MathJax" id="MathJax-Element-374-Frame"><nobr><span class="math" id="MathJax-Span-41288" style="width: 25.315em; display: inline-block;"><span style="display: inline-block; position: relative; width: 21.096em; height: 0px; font-size: 120%;"><span style="position: absolute; clip: rect(0.888em 1000.003em 3.648em -0.466em); top: -2.497em; left: 0.003em;"><span class="mrow" id="MathJax-Span-41289"><span class="texatom" id="MathJax-Span-41290"><span class="mrow" id="MathJax-Span-41291"><span class="mi" id="MathJax-Span-41292" style="font-family: STIXGeneral-Italic;">L<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-41293" style="font-family: STIXGeneral-Italic;">T<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mi" id="MathJax-Span-41294" style="font-family: STIXGeneral-Italic;">V<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mo" id="MathJax-Span-41295" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">:</span><span class="mi" id="MathJax-Span-41296" style="font-family: STIXGeneral-Italic; padding-left: 0.315em;">C<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-41297" style="font-family: STIXGeneral-Italic;">A</span><span class="mi" id="MathJax-Span-41298" style="font-family: STIXGeneral-Italic;">C<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mtext" id="MathJax-Span-41299" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-41300" style="font-family: STIXGeneral-Italic;">R</span><span class="mi" id="MathJax-Span-41301" style="font-family: STIXGeneral-Italic;">a</span><span class="mi" id="MathJax-Span-41302" style="font-family: STIXGeneral-Italic;">t<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-41303" style="font-family: STIXGeneral-Italic;">i</span><span class="mi" id="MathJax-Span-41304" style="font-family: STIXGeneral-Italic;">o</span><span class="mo" id="MathJax-Span-41305" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mfrac" id="MathJax-Span-41306" style="padding-left: 0.419em; padding-right: 0.107em;"><span style="display: inline-block; position: relative; width: 2.086em; height: 0px;"><span style="position: absolute; clip: rect(1.669em 1000.003em 2.659em -0.466em); top: -3.174em; left: 50%; margin-left: -0.935em;"><span class="mrow" id="MathJax-Span-41307"><span class="mi" id="MathJax-Span-41308" style="font-family: STIXGeneral-Italic;">L<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-41309" style="font-family: STIXGeneral-Italic;">T<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mi" id="MathJax-Span-41310" style="font-family: STIXGeneral-Italic;">V<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(1.669em 1000.003em 2.659em -0.414em); top: -1.82em; left: 50%; margin-left: -0.987em;"><span class="mrow" id="MathJax-Span-41311"><span class="mi" id="MathJax-Span-41312" style="font-family: STIXGeneral-Italic;">C<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-41313" style="font-family: STIXGeneral-Italic;">A</span><span class="mi" id="MathJax-Span-41314" style="font-family: STIXGeneral-Italic;">C<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(0.836em 1000.003em 1.201em -0.466em); top: -1.247em; left: 0.003em;"><span style="border-left-width: 2.086em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.25px; vertical-align: 0.003em;"></span><span style="display: inline-block; width: 0px; height: 1.044em;"></span></span></span></span><span class="mo" id="MathJax-Span-41315" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mfrac" id="MathJax-Span-41316" style="padding-left: 0.419em; padding-right: 0.107em;"><span style="display: inline-block; position: relative; width: 3.701em; height: 0px;"><span style="position: absolute; clip: rect(1.565em 1000.003em 2.867em -0.362em); top: -3.174em; left: 50%; margin-left: -1.768em;"><span class="mrow" id="MathJax-Span-41317"><span class="mn" id="MathJax-Span-41318" style="font-family: STIXGeneral-Regular;" data-bind="text: ltv"></span><span class="texatom" id="MathJax-Span-41319"><span class="mrow" id="MathJax-Span-41320"><span class="mo" id="MathJax-Span-41321"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">万</span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(1.565em 1000.003em 2.867em -0.414em); top: -1.716em; left: 50%; margin-left: -1.768em;"><span class="mrow" id="MathJax-Span-41322"><span class="mn" id="MathJax-Span-41323" style="font-family: STIXGeneral-Regular;" data-bind="text: cac"></span><span class="texatom" id="MathJax-Span-41324"><span class="mrow" id="MathJax-Span-41325"><span class="mo" id="MathJax-Span-41326"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">万</span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(0.836em 1000.003em 1.201em -0.466em); top: -1.247em; left: 0.003em;"><span style="border-left-width: 3.701em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.25px; vertical-align: 0.003em;"></span><span style="display: inline-block; width: 0px; height: 1.044em;"></span></span></span></span><span class="mo" id="MathJax-Span-41327" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mn" id="MathJax-Span-41328" style="font-size: 30px; font-family: STIXGeneral-Regular; padding-left: 0.315em;" data-bind="text: ratio"></span><span class="mo" id="MathJax-Span-41329" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">≥</span><span class="mn" id="MathJax-Span-41330" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">3.0</span><span class="bad" data-bind="visible: bad">&nbsp;Bad</span><span class="good" data-bind="visible: good">&nbsp;Good</span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span></span><span style="border-left-width: 0.003em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 3.066em; vertical-align: -1.247em;"></span></span></nobr></span></div><script type="math/tex; mode=display" id="MathJax-Element-374">{LTV:CAC\ Ratio = \frac{LTV}{CAC}
+= \frac{111.11万}{222.22万}
+= 4.0
+\geq 3.0
+}</script></div>
+
+<div class="tex"><a href="#" data-bind="click: toggleShowDetail">途中計算表示</a></div>
+
+
+    <div class="tex" data-bind="visible: showDetail"><span class="MathJax_Preview"></span><div class="MathJax_Display" role="textbox" aria-readonly="true" style="text-align: center;"><span class="MathJax" id="MathJax-Element-101-Frame"><nobr><span class="math" id="MathJax-Span-7368" style="width: 49.534em; display: inline-block;"><span style="display: inline-block; position: relative; width: 41.253em; height: 0px; font-size: 120%;"><span style="position: absolute; clip: rect(0.888em 1000.003em 3.648em -0.466em); top: -2.497em; left: 0.003em;"><span class="mrow" id="MathJax-Span-7369"><span class="texatom" id="MathJax-Span-7370"><span class="mrow" id="MathJax-Span-7371"><span class="mi" id="MathJax-Span-7372" style="font-family: STIXGeneral-Italic;">L<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-7373" style="font-family: STIXGeneral-Italic;">T<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mi" id="MathJax-Span-7374" style="font-family: STIXGeneral-Italic;">V<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mo" id="MathJax-Span-7375" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mfrac" id="MathJax-Span-7376" style="padding-left: 0.419em; padding-right: 0.107em;"><span style="display: inline-block; position: relative; width: 10.992em; height: 0px;"><span style="position: absolute; clip: rect(1.617em 1000.003em 2.867em -0.518em); top: -3.174em; left: 50%; margin-left: -5.466em;"><span class="mrow" id="MathJax-Span-7377"><span class="mi" id="MathJax-Span-7378" style="font-family: STIXGeneral-Italic;">A</span><span class="mi" id="MathJax-Span-7379" style="font-family: STIXGeneral-Italic;">R</span><span class="mi" id="MathJax-Span-7380" style="font-family: STIXGeneral-Italic;">P</span><span class="mi" id="MathJax-Span-7381" style="font-family: STIXGeneral-Italic;">A</span><span class="mo" id="MathJax-Span-7382" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">∗</span><span class="mi" id="MathJax-Span-7383" style="font-family: STIXGeneral-Italic; padding-left: 0.263em;">G</span><span class="mi" id="MathJax-Span-7384" style="font-family: STIXGeneral-Italic;">r<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-7385" style="font-family: STIXGeneral-Italic;">o</span><span class="mi" id="MathJax-Span-7386" style="font-family: STIXGeneral-Italic;">s</span><span class="mi" id="MathJax-Span-7387" style="font-family: STIXGeneral-Italic;">s</span><span class="mtext" id="MathJax-Span-7388" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-7389" style="font-family: STIXGeneral-Italic;">M<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mi" id="MathJax-Span-7390" style="font-family: STIXGeneral-Italic;">a</span><span class="mi" id="MathJax-Span-7391" style="font-family: STIXGeneral-Italic;">r<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-7392" style="font-family: STIXGeneral-Italic;">g</span><span class="mi" id="MathJax-Span-7393" style="font-family: STIXGeneral-Italic;">i</span><span class="mi" id="MathJax-Span-7394" style="font-family: STIXGeneral-Italic;">n</span><span class="mtext" id="MathJax-Span-7395" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mo" id="MathJax-Span-7396" style="font-family: STIXGeneral-Regular;">(</span><span class="mi" id="MathJax-Span-7397" style="font-family: STIXGeneral-Regular;">%</span><span class="mo" id="MathJax-Span-7398" style="font-family: STIXGeneral-Regular;">)</span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(1.669em 1000.003em 2.659em -0.414em); top: -1.82em; left: 50%; margin-left: -4.372em;"><span class="mrow" id="MathJax-Span-7399"><span class="mi" id="MathJax-Span-7400" style="font-family: STIXGeneral-Italic;">C<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-7401" style="font-family: STIXGeneral-Italic;">u</span><span class="mi" id="MathJax-Span-7402" style="font-family: STIXGeneral-Italic;">s</span><span class="mi" id="MathJax-Span-7403" style="font-family: STIXGeneral-Italic;">t<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-7404" style="font-family: STIXGeneral-Italic;">o</span><span class="mi" id="MathJax-Span-7405" style="font-family: STIXGeneral-Italic;">m</span><span class="mi" id="MathJax-Span-7406" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-7407" style="font-family: STIXGeneral-Italic;">r<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mtext" id="MathJax-Span-7408" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-7409" style="font-family: STIXGeneral-Italic;">C<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-7410" style="font-family: STIXGeneral-Italic;">h</span><span class="mi" id="MathJax-Span-7411" style="font-family: STIXGeneral-Italic;">u</span><span class="mi" id="MathJax-Span-7412" style="font-family: STIXGeneral-Italic;">r<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-7413" style="font-family: STIXGeneral-Italic;">n</span><span class="mtext" id="MathJax-Span-7414" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-7415" style="font-family: STIXGeneral-Italic;">R</span><span class="mi" id="MathJax-Span-7416" style="font-family: STIXGeneral-Italic;">a</span><span class="mi" id="MathJax-Span-7417" style="font-family: STIXGeneral-Italic;">t<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-7418" style="font-family: STIXGeneral-Italic;">e</span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(0.836em 1000.003em 1.201em -0.466em); top: -1.247em; left: 0.003em;"><span style="border-left-width: 10.992em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.25px; vertical-align: 0.003em;"></span><span style="display: inline-block; width: 0px; height: 1.044em;"></span></span></span></span><span class="mo" id="MathJax-Span-7419" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mfrac" id="MathJax-Span-7420" style="padding-left: 0.419em; padding-right: 0.107em;"><span style="display: inline-block; position: relative; width: 16.878em; height: 0px;"><span style="position: absolute; clip: rect(1.565em 1000.003em 2.867em -0.362em); top: -3.174em; left: 50%; margin-left: -8.383em;"><span class="mrow" id="MathJax-Span-7421"><span class="mn" id="MathJax-Span-7422" style="font-family: STIXGeneral-Regular;">1</span><span class="texatom" id="MathJax-Span-7423"><span class="mrow" id="MathJax-Span-7424"><span class="mo" id="MathJax-Span-7425"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">顧</span></span></span></span><span class="texatom" id="MathJax-Span-7426"><span class="mrow" id="MathJax-Span-7427"><span class="mo" id="MathJax-Span-7428"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">客</span></span></span></span><span class="texatom" id="MathJax-Span-7429"><span class="mrow" id="MathJax-Span-7430"><span class="mo" id="MathJax-Span-7431"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">あ</span></span></span></span><span class="texatom" id="MathJax-Span-7432"><span class="mrow" id="MathJax-Span-7433"><span class="mo" id="MathJax-Span-7434"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">た</span></span></span></span><span class="texatom" id="MathJax-Span-7435"><span class="mrow" id="MathJax-Span-7436"><span class="mo" id="MathJax-Span-7437"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">り</span></span></span></span><span class="mn" id="MathJax-Span-7438" style="font-family: STIXGeneral-Regular;">1</span><span class="texatom" id="MathJax-Span-7439"><span class="mrow" id="MathJax-Span-7440"><span class="mo" id="MathJax-Span-7441"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">月</span></span></span></span><span class="texatom" id="MathJax-Span-7442"><span class="mrow" id="MathJax-Span-7443"><span class="mo" id="MathJax-Span-7444"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">あ</span></span></span></span><span class="texatom" id="MathJax-Span-7445"><span class="mrow" id="MathJax-Span-7446"><span class="mo" id="MathJax-Span-7447"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">た</span></span></span></span><span class="texatom" id="MathJax-Span-7448"><span class="mrow" id="MathJax-Span-7449"><span class="mo" id="MathJax-Span-7450"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">り</span></span></span></span><span class="texatom" id="MathJax-Span-7451"><span class="mrow" id="MathJax-Span-7452"><span class="mo" id="MathJax-Span-7453"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">平</span></span></span></span><span class="texatom" id="MathJax-Span-7454"><span class="mrow" id="MathJax-Span-7455"><span class="mo" id="MathJax-Span-7456"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">均</span></span></span></span><span class="texatom" id="MathJax-Span-7457"><span class="mrow" id="MathJax-Span-7458"><span class="mo" id="MathJax-Span-7459"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">売</span></span></span></span><span class="texatom" id="MathJax-Span-7460"><span class="mrow" id="MathJax-Span-7461"><span class="mo" id="MathJax-Span-7462"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">上</span></span></span></span><span class="mo" id="MathJax-Span-7463" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">∗</span><span class="texatom" id="MathJax-Span-7464" style="padding-left: 0.263em;"><span class="mrow" id="MathJax-Span-7465"><span class="mo" id="MathJax-Span-7466"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">粗</span></span></span></span><span class="texatom" id="MathJax-Span-7467"><span class="mrow" id="MathJax-Span-7468"><span class="mo" id="MathJax-Span-7469"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">利</span></span></span></span><span class="texatom" id="MathJax-Span-7470"><span class="mrow" id="MathJax-Span-7471"><span class="mo" id="MathJax-Span-7472"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">率</span></span></span></span><span class="mo" id="MathJax-Span-7473" style="font-family: STIXGeneral-Regular;">(</span><span class="mi" id="MathJax-Span-7474" style="font-family: STIXGeneral-Regular;">%</span><span class="mo" id="MathJax-Span-7475" style="font-family: STIXGeneral-Regular;">)</span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(1.565em 1000.003em 2.867em -0.362em); top: -1.716em; left: 50%; margin-left: -3.174em;"><span class="mrow" id="MathJax-Span-7476"><span class="mn" id="MathJax-Span-7477" style="font-family: STIXGeneral-Regular;">1</span><span class="texatom" id="MathJax-Span-7478"><span class="mrow" id="MathJax-Span-7479"><span class="mo" id="MathJax-Span-7480"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">月</span></span></span></span><span class="texatom" id="MathJax-Span-7481"><span class="mrow" id="MathJax-Span-7482"><span class="mo" id="MathJax-Span-7483"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">あ</span></span></span></span><span class="texatom" id="MathJax-Span-7484"><span class="mrow" id="MathJax-Span-7485"><span class="mo" id="MathJax-Span-7486"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">た</span></span></span></span><span class="texatom" id="MathJax-Span-7487"><span class="mrow" id="MathJax-Span-7488"><span class="mo" id="MathJax-Span-7489"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">り</span></span></span></span><span class="texatom" id="MathJax-Span-7490"><span class="mrow" id="MathJax-Span-7491"><span class="mo" id="MathJax-Span-7492"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">解</span></span></span></span><span class="texatom" id="MathJax-Span-7493"><span class="mrow" id="MathJax-Span-7494"><span class="mo" id="MathJax-Span-7495"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">約</span></span></span></span><span class="texatom" id="MathJax-Span-7496"><span class="mrow" id="MathJax-Span-7497"><span class="mo" id="MathJax-Span-7498"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">率</span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(0.836em 1000.003em 1.201em -0.466em); top: -1.247em; left: 0.003em;"><span style="border-left-width: 16.878em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.25px; vertical-align: 0.003em;"></span><span style="display: inline-block; width: 0px; height: 1.044em;"></span></span></span></span><span class="mo" id="MathJax-Span-7499" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mfrac" id="MathJax-Span-7500" style="padding-left: 0.419em; padding-right: 0.107em;"><span style="display: inline-block; position: relative; width: 4.169em; height: 0px;"><span style="position: absolute; clip: rect(1.669em 1000.003em 2.659em -0.362em); top: -3.174em; left: 50%; margin-left: -2.029em;"><span class="mrow" id="MathJax-Span-7501"><span class="mn" id="MathJax-Span-7502" style="font-family: STIXGeneral-Regular;" data-bind="text: revenue_val"></span><span class="mn" id="MathJax-Span-7502" style="font-family: STIXGeneral-Regular;">万</span><span class="mo" id="MathJax-Span-7503" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">∗</span><span class="mn" id="MathJax-Span-7504" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;" data-bind="text: gm_val"></span><span class="mn" id="MathJax-Span-7504" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">%</span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(1.669em 1000.003em 2.659em -0.414em); top: -1.82em; left: 50%; margin-left: -0.727em;"><span class="mn" id="MathJax-Span-7505" style="font-family: STIXGeneral-Regular;" data-bind="text: churn_val"></span><span class="mn" id="MathJax-Span-7505" style="font-family: STIXGeneral-Regular;">%</span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(0.836em 1000.003em 1.201em -0.466em); top: -1.247em; left: 0.003em;"><span style="border-left-width: 4.169em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.25px; vertical-align: 0.003em;"></span><span style="display: inline-block; width: 0px; height: 1.044em;"></span></span></span></span><span class="mo" id="MathJax-Span-7506" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mn" id="MathJax-Span-7507" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;" data-bind="text: ltv"></span><span class="mn" id="MathJax-Span-7507" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">万</span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span></span><span style="border-left-width: 0.003em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 3.066em; vertical-align: -1.247em;"></span></span></nobr></span></div><script type="math/tex; mode=display" id="MathJax-Element-101">{LTV = \frac{ARPA * Gross\ Margin\ (\%)}{Customer\ Churn\ Rate}
+= \frac{1顧客あたり1月あたり平均売上 * 粗利率(\%)}{1月あたり解約率}
+= \frac{111 * 222}{333}
+= 444
+}</script></div>
+
+<div class="tex" data-bind="visible: showDetail"><span class="MathJax_Preview"></span><div class="MathJax_Display" role="textbox" aria-readonly="true" style="text-align: center;"><span class="MathJax" id="MathJax-Element-136-Frame"><nobr><span class="math" id="MathJax-Span-18841" style="width: 61.669em; display: inline-block;"><span style="display: inline-block; position: relative; width: 51.357em; height: 0px; font-size: 120%;"><span style="position: absolute; clip: rect(0.888em 1000.003em 3.648em -0.414em); top: -2.497em; left: 0.003em;"><span class="mrow" id="MathJax-Span-18842"><span class="texatom" id="MathJax-Span-18843"><span class="mrow" id="MathJax-Span-18844"><span class="mi" id="MathJax-Span-18845" style="font-family: STIXGeneral-Italic;">C<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18846" style="font-family: STIXGeneral-Italic;">A</span><span class="mi" id="MathJax-Span-18847" style="font-family: STIXGeneral-Italic;">C<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mo" id="MathJax-Span-18848" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mfrac" id="MathJax-Span-18849" style="padding-left: 0.419em; padding-right: 0.107em;"><span style="display: inline-block; position: relative; width: 16.044em; height: 0px;"><span style="position: absolute; clip: rect(1.669em 1000.003em 2.867em -0.466em); top: -3.174em; left: 50%; margin-left: -7.966em;"><span class="mrow" id="MathJax-Span-18850"><span class="mi" id="MathJax-Span-18851" style="font-family: STIXGeneral-Italic;">S<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18852" style="font-family: STIXGeneral-Italic;">u</span><span class="mi" id="MathJax-Span-18853" style="font-family: STIXGeneral-Italic;">m</span><span class="mtext" id="MathJax-Span-18854" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18855" style="font-family: STIXGeneral-Italic;">o</span><span class="mi" id="MathJax-Span-18856" style="font-family: STIXGeneral-Italic;">f<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.159em;"></span></span><span class="mtext" id="MathJax-Span-18857" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18858" style="font-family: STIXGeneral-Italic;">a</span><span class="mi" id="MathJax-Span-18859" style="font-family: STIXGeneral-Italic;">l<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18860" style="font-family: STIXGeneral-Italic;">l<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mtext" id="MathJax-Span-18861" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18862" style="font-family: STIXGeneral-Italic;">S<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18863" style="font-family: STIXGeneral-Italic;">a</span><span class="mi" id="MathJax-Span-18864" style="font-family: STIXGeneral-Italic;">l<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18865" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-18866" style="font-family: STIXGeneral-Italic;">s</span><span class="mtext" id="MathJax-Span-18867" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18868" style="font-family: STIXGeneral-Regular;">&amp;</span><span class="mtext" id="MathJax-Span-18869" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18870" style="font-family: STIXGeneral-Italic;">M<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mi" id="MathJax-Span-18871" style="font-family: STIXGeneral-Italic;">a</span><span class="mi" id="MathJax-Span-18872" style="font-family: STIXGeneral-Italic;">r<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18873" style="font-family: STIXGeneral-Italic;">k<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18874" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-18875" style="font-family: STIXGeneral-Italic;">t<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18876" style="font-family: STIXGeneral-Italic;">i</span><span class="mi" id="MathJax-Span-18877" style="font-family: STIXGeneral-Italic;">n</span><span class="mi" id="MathJax-Span-18878" style="font-family: STIXGeneral-Italic;">g</span><span class="mtext" id="MathJax-Span-18879" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18880" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-18881" style="font-family: STIXGeneral-Italic;">x<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18882" style="font-family: STIXGeneral-Italic;">p</span><span class="mi" id="MathJax-Span-18883" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-18884" style="font-family: STIXGeneral-Italic;">n</span><span class="mi" id="MathJax-Span-18885" style="font-family: STIXGeneral-Italic;">s</span><span class="mi" id="MathJax-Span-18886" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-18887" style="font-family: STIXGeneral-Italic;">s</span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(1.669em 1000.003em 2.867em -0.466em); top: -1.82em; left: 50%; margin-left: -5.727em;"><span class="mrow" id="MathJax-Span-18888"><span class="mi" id="MathJax-Span-18889" style="font-family: STIXGeneral-Italic;">N<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mi" id="MathJax-Span-18890" style="font-family: STIXGeneral-Italic;">o</span><span class="mtext" id="MathJax-Span-18891" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18892" style="font-family: STIXGeneral-Italic;">o</span><span class="mi" id="MathJax-Span-18893" style="font-family: STIXGeneral-Italic;">f<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.159em;"></span></span><span class="mtext" id="MathJax-Span-18894" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18895" style="font-family: STIXGeneral-Italic;">n</span><span class="mi" id="MathJax-Span-18896" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-18897" style="font-family: STIXGeneral-Italic;">w</span><span class="mtext" id="MathJax-Span-18898" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18899" style="font-family: STIXGeneral-Italic;">c</span><span class="mi" id="MathJax-Span-18900" style="font-family: STIXGeneral-Italic;">u</span><span class="mi" id="MathJax-Span-18901" style="font-family: STIXGeneral-Italic;">s</span><span class="mi" id="MathJax-Span-18902" style="font-family: STIXGeneral-Italic;">t<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18903" style="font-family: STIXGeneral-Italic;">o</span><span class="mi" id="MathJax-Span-18904" style="font-family: STIXGeneral-Italic;">m</span><span class="mi" id="MathJax-Span-18905" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-18906" style="font-family: STIXGeneral-Italic;">r<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.003em;"></span></span><span class="mi" id="MathJax-Span-18907" style="font-family: STIXGeneral-Italic;">s</span><span class="mtext" id="MathJax-Span-18908" style="font-family: STIXGeneral-Regular;">&nbsp;</span><span class="mi" id="MathJax-Span-18909" style="font-family: STIXGeneral-Italic;">a</span><span class="mi" id="MathJax-Span-18910" style="font-family: STIXGeneral-Italic;">d<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mi" id="MathJax-Span-18911" style="font-family: STIXGeneral-Italic;">d<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span><span class="mi" id="MathJax-Span-18912" style="font-family: STIXGeneral-Italic;">e</span><span class="mi" id="MathJax-Span-18913" style="font-family: STIXGeneral-Italic;">d<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.055em;"></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(0.836em 1000.003em 1.201em -0.466em); top: -1.247em; left: 0.003em;"><span style="border-left-width: 16.044em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.25px; vertical-align: 0.003em;"></span><span style="display: inline-block; width: 0px; height: 1.044em;"></span></span></span></span><span class="mo" id="MathJax-Span-18914" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mfrac" id="MathJax-Span-18915" style="padding-left: 0.419em; padding-right: 0.107em;"><span style="display: inline-block; position: relative; width: 15.419em; height: 0px;"><span style="position: absolute; clip: rect(1.565em 1000.003em 2.867em -0.466em); top: -3.174em; left: 50%; margin-left: -7.654em;"><span class="mrow" id="MathJax-Span-18916"><span class="texatom" id="MathJax-Span-18917"><span class="mrow" id="MathJax-Span-18918"><span class="mo" id="MathJax-Span-18919"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">セ</span></span></span></span><span class="texatom" id="MathJax-Span-18920"><span class="mrow" id="MathJax-Span-18921"><span class="mo" id="MathJax-Span-18922"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ー</span></span></span></span><span class="texatom" id="MathJax-Span-18923"><span class="mrow" id="MathJax-Span-18924"><span class="mo" id="MathJax-Span-18925"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ル</span></span></span></span><span class="texatom" id="MathJax-Span-18926"><span class="mrow" id="MathJax-Span-18927"><span class="mo" id="MathJax-Span-18928"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ス</span></span></span></span><span class="texatom" id="MathJax-Span-18929"><span class="mrow" id="MathJax-Span-18930"><span class="mo" id="MathJax-Span-18931"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">全</span></span></span></span><span class="texatom" id="MathJax-Span-18932"><span class="mrow" id="MathJax-Span-18933"><span class="mo" id="MathJax-Span-18934"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">費</span></span></span></span><span class="texatom" id="MathJax-Span-18935"><span class="mrow" id="MathJax-Span-18936"><span class="mo" id="MathJax-Span-18937"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">用</span></span></span></span><span class="mo" id="MathJax-Span-18938" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">+</span><span class="texatom" id="MathJax-Span-18939" style="padding-left: 0.263em;"><span class="mrow" id="MathJax-Span-18940"><span class="mo" id="MathJax-Span-18941"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">マ</span></span></span></span><span class="texatom" id="MathJax-Span-18942"><span class="mrow" id="MathJax-Span-18943"><span class="mo" id="MathJax-Span-18944"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ー</span></span></span></span><span class="texatom" id="MathJax-Span-18945"><span class="mrow" id="MathJax-Span-18946"><span class="mo" id="MathJax-Span-18947"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ケ</span></span></span></span><span class="texatom" id="MathJax-Span-18948"><span class="mrow" id="MathJax-Span-18949"><span class="mo" id="MathJax-Span-18950"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">テ</span></span></span></span><span class="texatom" id="MathJax-Span-18951"><span class="mrow" id="MathJax-Span-18952"><span class="mo" id="MathJax-Span-18953"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ィ</span></span></span></span><span class="texatom" id="MathJax-Span-18954"><span class="mrow" id="MathJax-Span-18955"><span class="mo" id="MathJax-Span-18956"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ン</span></span></span></span><span class="texatom" id="MathJax-Span-18957"><span class="mrow" id="MathJax-Span-18958"><span class="mo" id="MathJax-Span-18959"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">グ</span></span></span></span><span class="texatom" id="MathJax-Span-18960"><span class="mrow" id="MathJax-Span-18961"><span class="mo" id="MathJax-Span-18962"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">全</span></span></span></span><span class="texatom" id="MathJax-Span-18963"><span class="mrow" id="MathJax-Span-18964"><span class="mo" id="MathJax-Span-18965"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">費</span></span></span></span><span class="texatom" id="MathJax-Span-18966"><span class="mrow" id="MathJax-Span-18967"><span class="mo" id="MathJax-Span-18968"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">用</span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(1.357em 1000.003em 2.659em -0.466em); top: -1.508em; left: 50%; margin-left: -2.914em;"><span class="mrow" id="MathJax-Span-18969"><span class="texatom" id="MathJax-Span-18970"><span class="mrow" id="MathJax-Span-18971"><span class="mo" id="MathJax-Span-18972"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">新</span></span></span></span><span class="texatom" id="MathJax-Span-18973"><span class="mrow" id="MathJax-Span-18974"><span class="mo" id="MathJax-Span-18975"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">規</span></span></span></span><span class="texatom" id="MathJax-Span-18976"><span class="mrow" id="MathJax-Span-18977"><span class="mo" id="MathJax-Span-18978"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">顧</span></span></span></span><span class="texatom" id="MathJax-Span-18979"><span class="mrow" id="MathJax-Span-18980"><span class="mo" id="MathJax-Span-18981"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">客</span></span></span></span><span class="texatom" id="MathJax-Span-18982"><span class="mrow" id="MathJax-Span-18983"><span class="mo" id="MathJax-Span-18984"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">獲</span></span></span></span><span class="texatom" id="MathJax-Span-18985"><span class="mrow" id="MathJax-Span-18986"><span class="mo" id="MathJax-Span-18987"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">得</span></span></span></span><span class="texatom" id="MathJax-Span-18988"><span class="mrow" id="MathJax-Span-18989"><span class="mo" id="MathJax-Span-18990"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">数</span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.294em;"></span></span><span style="position: absolute; clip: rect(0.836em 1000.003em 1.201em -0.466em); top: -1.247em; left: 0.003em;"><span style="border-left-width: 15.419em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.25px; vertical-align: 0.003em;"></span><span style="display: inline-block; width: 0px; height: 1.044em;"></span></span></span></span><span class="mo" id="MathJax-Span-18991" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mfrac" id="MathJax-Span-18992" style="padding-left: 0.419em; padding-right: 0.107em;"><span style="display: inline-block; position: relative; width: 8.492em; height: 0px;"><span style="position: absolute; clip: rect(1.565em 1000.003em 2.867em -0.362em); top: -3.174em; left: 50%; margin-left: -4.216em;"><span class="mrow" id="MathJax-Span-18993"><span class="mn" id="MathJax-Span-18994" style="font-family: STIXGeneral-Regular;" data-bind="text: sales"></span><span class="texatom" id="MathJax-Span-18995"><span class="mrow" id="MathJax-Span-18996"><span class="mo" id="MathJax-Span-18997"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">万</span></span></span></span><span class="mo" id="MathJax-Span-18998" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">+</span><span class="mn" id="MathJax-Span-18999" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;" data-bind="text: marketing"></span><span class="texatom" id="MathJax-Span-19000"><span class="mrow" id="MathJax-Span-19001"><span class="mo" id="MathJax-Span-19002"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">万</span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(1.669em 1000.003em 2.659em -0.414em); top: -1.82em; left: 50%; margin-left: -0.622em;"><span class="mn" id="MathJax-Span-19003" style="font-family: STIXGeneral-Regular;" data-bind="text: new_customer_val"></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span><span style="position: absolute; clip: rect(0.836em 1000.003em 1.201em -0.466em); top: -1.247em; left: 0.003em;"><span style="border-left-width: 8.492em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.25px; vertical-align: 0.003em;"></span><span style="display: inline-block; width: 0px; height: 1.044em;"></span></span></span></span><span class="mo" id="MathJax-Span-19004" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mn" id="MathJax-Span-19005" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;" data-bind="text: cac"></span><span class="texatom" id="MathJax-Span-19006"><span class="mrow" id="MathJax-Span-19007"><span class="mo" id="MathJax-Span-19008"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">万</span></span></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span></span><span style="border-left-width: 0.003em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 3.066em; vertical-align: -1.247em;"></span></span></nobr></span></div><script type="math/tex; mode=display" id="MathJax-Element-136">{CAC = \frac{Sum\ of\ all\ Sales\ \&\ Marketing\ expenses}{No\ of\ new\ customers\ added}
+= \frac{セールス全費用 + マーケティング全費用}{新規顧客獲得数}
+= \frac{111.11万 + 222.22万}{2.1}
+= 444.44万
+}</script></div>
+
+<div class="tex" data-bind="visible: showDetail"><span class="MathJax_Preview"></span><div class="MathJax_Display" role="textbox" aria-readonly="true" style="text-align: center;"><span class="MathJax" id="MathJax-Element-212-Frame"><nobr><span class="math" id="MathJax-Span-27282" style="width: 16.982em; display: inline-block;"><span style="display: inline-block; position: relative; width: 14.117em; height: 0px; font-size: 120%;"><span style="position: absolute; clip: rect(1.565em 1000.003em 2.867em -0.466em); top: -2.497em; left: 0.003em;"><span class="mrow" id="MathJax-Span-27283"><span class="texatom" id="MathJax-Span-27284"><span class="mrow" id="MathJax-Span-27285"><span class="texatom" id="MathJax-Span-27286"><span class="mrow" id="MathJax-Span-27287"><span class="mo" id="MathJax-Span-27288"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">セ</span></span></span></span><span class="texatom" id="MathJax-Span-27289"><span class="mrow" id="MathJax-Span-27290"><span class="mo" id="MathJax-Span-27291"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ー</span></span></span></span><span class="texatom" id="MathJax-Span-27292"><span class="mrow" id="MathJax-Span-27293"><span class="mo" id="MathJax-Span-27294"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ル</span></span></span></span><span class="texatom" id="MathJax-Span-27295"><span class="mrow" id="MathJax-Span-27296"><span class="mo" id="MathJax-Span-27297"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ス</span></span></span></span><span class="texatom" id="MathJax-Span-27298"><span class="mrow" id="MathJax-Span-27299"><span class="mo" id="MathJax-Span-27300"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">全</span></span></span></span><span class="texatom" id="MathJax-Span-27301"><span class="mrow" id="MathJax-Span-27302"><span class="mo" id="MathJax-Span-27303"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">費</span></span></span></span><span class="texatom" id="MathJax-Span-27304"><span class="mrow" id="MathJax-Span-27305"><span class="mo" id="MathJax-Span-27306"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">用</span></span></span></span><span class="mo" id="MathJax-Span-27307" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mn" id="MathJax-Span-27308" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;" data-bind="text: person_cost_val"></span><span class="texatom" id="MathJax-Span-27309"><span class="mrow" id="MathJax-Span-27310"><span class="mo" id="MathJax-Span-27311"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">万</span></span></span></span><span class="mo" id="MathJax-Span-27312" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">∗</span><span class="mn" id="MathJax-Span-27313" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;" data-bind="text: sales_val">8</span><span class="texatom" id="MathJax-Span-27314"><span class="mrow" id="MathJax-Span-27315"><span class="mo" id="MathJax-Span-27316"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">人</span></span></span></span><span class="mo" id="MathJax-Span-27317" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">∗</span><span class="mn" id="MathJax-Span-27318" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;" data-bind="text: sales_per_val"></span><span class="mi" id="MathJax-Span-27319" style="font-family: STIXGeneral-Regular;">%</span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span></span><span style="border-left-width: 0.003em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.316em; vertical-align: -0.309em;"></span></span></nobr></span></div><script type="math/tex; mode=display" id="MathJax-Element-212">{セールス全費用 = 00万 * 0人 * 00\%
+}</script></div>
+
+<div class="tex" data-bind="visible: showDetail"><span class="MathJax_Preview"></span><div class="MathJax_Display" role="textbox" aria-readonly="true" style="text-align: center;"><span class="MathJax" id="MathJax-Element-213-Frame"><nobr><span class="math" id="MathJax-Span-27320" style="width: 23.648em; display: inline-block;"><span style="display: inline-block; position: relative; width: 19.69em; height: 0px; font-size: 120%;"><span style="position: absolute; clip: rect(1.565em 1000.003em 2.867em -0.466em); top: -2.497em; left: 0.003em;"><span class="mrow" id="MathJax-Span-27321"><span class="texatom" id="MathJax-Span-27322"><span class="mrow" id="MathJax-Span-27323"><span class="texatom" id="MathJax-Span-27324"><span class="mrow" id="MathJax-Span-27325"><span class="mo" id="MathJax-Span-27326"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">マ</span></span></span></span><span class="texatom" id="MathJax-Span-27327"><span class="mrow" id="MathJax-Span-27328"><span class="mo" id="MathJax-Span-27329"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ー</span></span></span></span><span class="texatom" id="MathJax-Span-27330"><span class="mrow" id="MathJax-Span-27331"><span class="mo" id="MathJax-Span-27332"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ケ</span></span></span></span><span class="texatom" id="MathJax-Span-27333"><span class="mrow" id="MathJax-Span-27334"><span class="mo" id="MathJax-Span-27335"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">テ</span></span></span></span><span class="texatom" id="MathJax-Span-27336"><span class="mrow" id="MathJax-Span-27337"><span class="mo" id="MathJax-Span-27338"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ィ</span></span></span></span><span class="texatom" id="MathJax-Span-27339"><span class="mrow" id="MathJax-Span-27340"><span class="mo" id="MathJax-Span-27341"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">ン</span></span></span></span><span class="texatom" id="MathJax-Span-27342"><span class="mrow" id="MathJax-Span-27343"><span class="mo" id="MathJax-Span-27344"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">グ</span></span></span></span><span class="texatom" id="MathJax-Span-27345"><span class="mrow" id="MathJax-Span-27346"><span class="mo" id="MathJax-Span-27347"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">全</span></span></span></span><span class="texatom" id="MathJax-Span-27348"><span class="mrow" id="MathJax-Span-27349"><span class="mo" id="MathJax-Span-27350"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">費</span></span></span></span><span class="texatom" id="MathJax-Span-27351"><span class="mrow" id="MathJax-Span-27352"><span class="mo" id="MathJax-Span-27353"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">用</span></span></span></span><span class="mo" id="MathJax-Span-27354" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;">=</span><span class="mn" id="MathJax-Span-27355" style="font-family: STIXGeneral-Regular; padding-left: 0.315em;" data-bind="text: person_cost_val"></span><span class="texatom" id="MathJax-Span-27356"><span class="mrow" id="MathJax-Span-27357"><span class="mo" id="MathJax-Span-27358"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">万</span></span></span></span><span class="mo" id="MathJax-Span-27359" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">∗</span><span class="mn" id="MathJax-Span-27360" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;" data-bind="text: marketing_val"></span><span class="texatom" id="MathJax-Span-27361"><span class="mrow" id="MathJax-Span-27362"><span class="mo" id="MathJax-Span-27363"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">人</span></span></span></span><span class="mo" id="MathJax-Span-27364" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">∗</span><span class="mn" id="MathJax-Span-27365" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;" data-bind="text: marketing_per_val"></span><span class="mi" id="MathJax-Span-27366" style="font-family: STIXGeneral-Regular;">%</span><span class="mo" id="MathJax-Span-27367" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;">+</span><span class="mn" id="MathJax-Span-27368" style="font-family: STIXGeneral-Regular; padding-left: 0.263em;" data-bind="text: marketing_cost_val"></span><span class="texatom" id="MathJax-Span-27369"><span class="mrow" id="MathJax-Span-27370"><span class="mo" id="MathJax-Span-27371"><span style="font-family: STIXGeneral, 'Arial Unicode MS', serif; font-size: 83%; font-style: normal; font-weight: normal;">万</span></span></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.503em;"></span></span></span><span style="border-left-width: 0.003em; border-left-style: solid; display: inline-block; overflow: hidden; width: 0px; height: 1.316em; vertical-align: -0.309em;"></span></span></nobr></span></div><script type="math/tex; mode=display" id="MathJax-Element-213">{マーケティング全費用 = 00万 * 0人 * 00\% + 00万
+}</script></div>
+
+</div>
+    <div class="container">
+      <br>
+      <br>
+    </div>
+
+
+    <div class="container">
+
+      <div>
+        <div><span>そのプロダクトの1顧客あたり平均売上</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: revenue_val, min: revenue_min, max: revenue_max }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="1" data-bind="value: revenue_val">&nbsp; 万円/月</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>そのプロダクトの解約率</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: churn_val, min: churn_min, max: churn_max, step: churn_step }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="0.1" data-bind="value: churn_val">&nbsp; %/月</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>そのプロダクトの粗利率</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: gm_val, min: gm_min, max: gm_max }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="1" data-bind="value: gm_val">&nbsp; %</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>そのプロダクトの新規顧客獲得数</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: new_customer_val, min: new_customer_min, max: new_customer_max, step: new_customer_step }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="0.1" data-bind="value: new_customer_val">&nbsp; 社/月</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>1人あたり人件費</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: person_cost_val, min: person_cost_min, max: person_cost_max }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="1" data-bind="value: person_cost_val">&nbsp; 万円/月</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>セールス部門人数</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: sales_val, min: sales_min, max: sales_max }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="1" data-bind="value: sales_val">&nbsp; 人</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>セールス部門がそのプロダクトにかける活動時間割合</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: sales_per_val, min: sales_per_min, max: sales_per_max }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="1" data-bind="value: sales_per_val">&nbsp; %</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>マーケティング部門人数</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: marketing_val, min: marketing_min, max: marketing_max }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="1" data-bind="value: marketing_val">&nbsp; 人</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>マーケティング部門がそのプロダクトにかける活動時間割合</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: marketing_per_val, min: marketing_per_min, max: marketing_per_max }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="1" data-bind="value: marketing_per_val">&nbsp; %</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div><span>そのプロダクトにかける広告費・マーケティング費</span></div>
+        <div class="slider">
+          <div data-bind="wijslider: { value: marketing_cost_val, min: marketing_cost_min, max: marketing_cost_max }" style="width: 200px;">
+          </div>
+        </div>
+        <div class="value"><div><span><input class="data" type="number" pattern="\d*" step="1" data-bind="value: marketing_cost_val">&nbsp; 万円/月</span></div>
+        </div>
+      </div>
+
+      <!--
+      <div>
+        <span>LTV / CAC ratio</span>
+        <div>
+          <span class="data" data-bind="text: ratio"><span></span></span>
+        </div>
+        <div data-bind='wijlineargauge: {
+          value: ratio,
+          min: 0.0,
+          max: 5,
+          animation: {
+             enabled: false,
+          },
+          labels: {
+            style: {
+            fill: "#1E395B",
+            "font-size": 12,
+            "font-weight": "800"
+            }
+          },
+          tickMajor: {
+            position: "inside",
+            interval: 1,
+            style: {
+              fill: "#1E395B",
+              stroke: "none"
+            }
+          },
+          tickMinor: {
+            position: "inside",
+            visible: true,
+            interval: 0.1,
+            style: {
+              fill: "#1E395B",
+              stroke: "none"
+            }
+          },
+          pointer: {
+            shape: "rect",
+            length: 0.5,
+            style: {
+              fill: "#1E395B",
+              stroke: "#1E395B"
+            }
+          },
+          face: {
+            style: {
+              fill: "270-#FFFFFF-#D9E3F0",
+              stroke: "#7BA0CC",
+              "stroke-width": 2
+            }
+          }
+        }'>
+        </div>
+      </div>
+      -->
+    </div>
+  </body>
 </html>
